@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/utils/theme_controller.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -75,7 +76,25 @@ class LeftDrawer extends StatelessWidget {
                 ),
               );
             },
-          )
+          ),
+          const Divider(),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeModeNotifier,
+            builder: (context, mode, _) {
+              return SwitchListTile(
+                secondary: Icon(
+                  mode == ThemeMode.dark
+                      ? Icons.dark_mode_outlined
+                      : Icons.light_mode_outlined,
+                ),
+                title: const Text('Dark Mode'),
+                value: mode == ThemeMode.dark,
+                onChanged: (bool isDark) {
+                  themeModeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+                },
+              );
+            },
+          ),
         ],
       ),
     );

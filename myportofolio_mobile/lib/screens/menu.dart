@@ -30,7 +30,7 @@ class MyHomePage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: Colors.indigo,
         iconTheme: const IconThemeData(color: Colors.white)
       ),
       drawer: const LeftDrawer(),

@@ -10,9 +10,14 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    // Di mode gelap, warna kartu digelapkan 40% agar tidak menyilaukan.
+    final Color cardColor =
+      isDark ? Color.lerp(item.color, Colors.black, 0.6)! : item.color;
+
     return Material(
       // Menggunakan warna sekunder dari skema tema aplikasi.
-      color: item.color,
+      color: cardColor,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
