@@ -229,3 +229,157 @@ Menggunakan Claude Sonnet 5.5 High untuk mempelajari terkait cara kerja elemen-e
 ## Link Log Chat AI
 
 https://claude.ai/share/fc6126cf-faf3-44a2-a56e-ded772f49f48
+
+
+
+# Week 8
+
+### Dokumentasi Tugas 8: Formulir, Navigasi, dan Validasi (MyPortfolio Mobile)
+
+Zidan Fauzan Ikrar, NPM 2506589616, PBP E
+
+## 1. `Navigator.push()`, `Navigator.pushReplacement()`, dan `Navigator.pop()`
+
+`Navigator` mengelola halaman aplikasi sebagai sebuah **tumpukan (stack) route**. Halaman yang tampil di layar adalah route paling atas pada tumpukan itu.
+
+| Metode | Efek pada tumpukan | Halaman sebelumnya | Pemakaian di proyek |
+| --- | --- | --- | --- |
+| `Navigator.push()` | Menambahkan route baru di atas tumpukan | Tetap ada di bawahnya, sehingga bisa kembali ke sana | Kartu aksi Tambah Proyek dan Tambah Pengalaman di `project_card.dart` |
+| `Navigator.pushReplacement()` | Mengganti route teratas dengan route baru | Dibuang dari tumpukan, sehingga tidak bisa kembali ke halaman yang diganti | Opsi Home, Add Project, dan Add Experience di `left_drawer.dart` |
+| `Navigator.pop()` | Membuang route teratas | Halaman di bawahnya kembali tampil | Tombol OK pada `AlertDialog` untuk menutup dialog |
+
+`AlertDialog` yang dibuka lewat `showDialog()` juga merupakan sebuah route, itulah sebabnya `Navigator.pop(context)` dapat menutupnya.
+
+**Metode untuk membuka formulir dari kartu aksi adalah `Navigator.push()`.** Kode pada `ItemCard`:
+
+```dart
+if (item.name == 'Tambah Pengalaman') {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const ExperienceFormPage()),
+  );
+}
+```
+
+Karena memakai `push`, halaman utama tetap berada di bawah formulir pada tumpukan. Pengguna bisa kembali dengan tombol kembali bawaan perangkat jika tersedia, misalnya tombol Back pada Android. Pada `AppBar` formulir yang tampil adalah ikon drawer (hamburger), bukan panah kembali, karena `Scaffold` memiliki drawer. Saat aplikasi dijalankan di Chrome, alur kembali diuji lewat opsi Home pada drawer.
+
+**Opsi Home pada drawer** membawa pengguna ke halaman utama dengan `pushReplacement`:
+
+```dart
+ListTile(
+  leading: const Icon(Icons.home_outlined),
+  title: const Text('Home'),
+  onTap: () {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MyHomePage()),
+    );
+  },
+),
+```
+
+Halaman formulir yang sedang tampil diganti dengan `MyHomePage` yang baru. Drawer merupakan bagian dari halaman formulir yang diganti, sehingga ikut tertutup. Karena halaman lama dibuang, pengguna tidak kembali ke formulir lewat tombol kembali. Catatan: jika formulir sebelumnya dibuka lewat kartu (`push`), halaman utama yang lama masih ada di bawah halaman utama yang baru. Bila ingin tumpukan bersih, dapat dipakai `Navigator.pushAndRemoveUntil()` dengan `(route) => false`.
+
+## 2. Susunan `Scaffold`, `AppBar`, dan `Drawer`
+
+`Scaffold` adalah kerangka halaman Material yang menyediakan slot tetap: `appBar` di atas, `drawer` di sisi kiri, dan `body` untuk isi halaman. Setiap halaman di proyek ini (halaman utama, formulir proyek, formulir pengalaman) memakai susunan yang sama:
+
+```dart
+Scaffold(
+  appBar: AppBar(...),
+  drawer: const LeftDrawer(),
+  body: ...,
+)
+```
+
+Susunan ini menjaga struktur halaman tetap konsisten karena:
+
+- **Bentuk halaman selalu sama.** Pengguna selalu menemukan bilah judul di atas, isi di tengah, dan menu di drawer, sehingga mudah mengenali di mana mereka berada.
+- **Drawer dibuat sekali dan dipakai ulang.** `LeftDrawer` didefinisikan di satu berkas dan dipanggil di setiap halaman, jadi menu navigasinya selalu sama dan perubahan cukup dilakukan di satu tempat.
+- **`AppBar` otomatis menampilkan tombol untuk membuka drawer** ketika `Scaffold` memiliki `drawer`, tanpa kode tambahan.
+- Hanya `body` yang berbeda antar halaman.
+
+**Contoh penggunaan warna tema portofolio di lebih dari satu halaman:** warna indigo.
+
+```dart
+// main.dart: warna dasar tema aplikasi
+colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+
+// project_form.dart dan experience_form.dart: AppBar formulir
+backgroundColor: Colors.indigo,
+foregroundColor: Colors.white,
+
+// left_drawer.dart: header drawer, tampil di semua halaman
+DrawerHeader(decoration: BoxDecoration(color: Colors.indigo), ...)
+```
+
+Warna yang sama juga dipakai pada tombol Save di kedua formulir. Dengan begitu halaman utama, formulir proyek, dan formulir pengalaman terlihat sebagai satu aplikasi yang utuh.
+
+## 3. Tata Letak Formulir
+
+Susunan widget pada formulir:
+
+```
+Scaffold
+  body: Form (key: _formKey)
+    SingleChildScrollView
+      Column (crossAxisAlignment: start)
+        Padding > TextFormField (nama)
+        Padding > TextFormField (deskripsi, maxLines: 5)
+        Padding > DropdownButtonFormField (kategori)
+        Padding > TextFormField (tanggal, membuka showDatePicker)
+        Align > Padding > ElevatedButton (Save)
+```
+
+Alasan pemilihannya:
+
+- **`Column`** menyusun satu input per baris dari atas ke bawah. Ini pola yang paling mudah dibaca dan diisi pada layar sempit, dan `crossAxisAlignment.start` meratakan isinya ke kiri.
+- **`Padding` (widget pengatur jarak)** memberi ruang 8 piksel di sekeliling setiap input, sehingga kolom tidak menempel satu sama lain maupun ke tepi layar, dan area sentuhnya terpisah jelas. Untuk jarak tetap antar widget di tempat lain, seperti halaman utama, dipakai `SizedBox`.
+- **`SingleChildScrollView` (widget penggulir)** dipakai karena total tinggi formulir bisa melebihi tinggi layar, terutama pada layar sempit atau pendek, mode landscape, atau saat papan ketik di layar menutupi sebagian halaman. Tanpa penggulir, Flutter menampilkan garis overflow kuning-hitam dan tombol Simpan bisa tidak terjangkau. Dengan penggulir, semua input dan tombol Simpan tetap bisa dijangkau dengan menggulir halaman.
+- **`Form` membungkus penggulir** sehingga semua `TextFormField` dan dropdown di dalamnya tergabung dalam satu formulir yang dapat divalidasi sekaligus.
+
+## 4. `GlobalKey<FormState>`, `validator`, dan `validate()`
+
+- **`GlobalKey<FormState>`** (`_formKey`) dipasang pada widget `Form`. Kunci ini memberi akses ke `FormState` dari luar widget, sehingga tombol Simpan dapat memerintahkan seluruh form untuk memeriksa dirinya, dan setelah berhasil menyetelnya ulang lewat `reset()`.
+- **`validator`** adalah fungsi pada setiap `TextFormField`. Fungsi ini menerima isian dan mengembalikan `null` jika isian valid, atau teks pesan kesalahan jika tidak valid.
+- **`validate()`** dipanggil pada `FormState`. Metode ini menjalankan semua `validator` di dalam form. Pesan kesalahan ditampilkan tepat di bawah kolom yang bermasalah, dan hasilnya `true` hanya bila semua validator mengembalikan `null`.
+
+Alur saat tombol Simpan ditekan:
+
+```dart
+onPressed: () {
+  if (_formKey.currentState!.validate()) {
+    // Semua input lolos: tampilkan ringkasan di AlertDialog
+    showDialog(...);
+  }
+  // Jika ada yang tidak valid, validate() sudah menampilkan
+  // pesan kesalahan di kolom terkait dan dialog tidak muncul.
+},
+```
+
+**Contoh nilai yang ditolak:** kolom Nama Pengalaman diisi tiga spasi saja (`'   '`). Validatornya:
+
+```dart
+validator: (String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return 'Nama pengalaman tidak boleh kosong!';
+  }
+  return null;
+},
+```
+
+`trim()` membuang spasi di awal dan akhir, sehingga isian berspasi saja menjadi kosong dan ditolak dengan pesan kesalahan. Contoh lain yang ditolak: nama yang melebihi batas panjang, dan tanggal selesai yang lebih awal daripada tanggal mulai.
+
+**Mengapa memilih jenis input atau papan ketik saja belum cukup:**
+
+- Jenis papan ketik (misalnya `TextInputType`) hanya memandu tampilan papan ketik. Ia tidak melarang pengguna mengosongkan kolom, mengetik spasi saja, menempelkan (paste) teks, atau mengetik lewat papan ketik fisik, misalnya saat aplikasi berjalan di Chrome.
+- Dropdown dan `showDatePicker()` membatasi pilihan, tetapi tidak dapat memeriksa kolom yang wajib diisi atau hubungan antar kolom, seperti tanggal selesai yang tidak boleh sebelum tanggal mulai.
+- Aturan seperti isian wajib, batas panjang, format URL, dan urutan tanggal harus ditegakkan oleh `validator`. Jika data nanti dikirim ke backend Django, validasi di server tetap diperlukan sebagai pertahanan terakhir.
+
+## AI Disclosure
+
+Menggunakan Claude Sonnet 5.5 High untuk membantu menambahkan field yang menggunakan tanggal pada experience (berupa start date dan end date), validasi tambahan untuk jumlah karakter maksimal, merapikan tampilan menu utama, dan dokumentasi. AI tersebut juga digunakan untuk membantu saya menerapkan dark mode sebagai fungsionalitas tambahan. Namun, pada awalnya warna tombol-tombol di menu utama tidak berubah saat men-toggle dark mode, lalu saya menanyakan AI nya terkait masalah tersebut dan menerapkan sebagian bantuannya serta melakukan perubahan manual agar sesuai dengan tampilan dark mode yang seharusnya.
+
+## Link Log Chat AI
+
+https://claude.ai/share/fc6126cf-faf3-44a2-a56e-ded772f49f48
