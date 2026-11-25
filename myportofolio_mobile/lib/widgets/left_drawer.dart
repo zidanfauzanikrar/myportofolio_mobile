@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
+import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/screens/skill_list.dart';
 import 'package:myportofolio_mobile/utils/theme_controller.dart';
 
 class LeftDrawer extends StatelessWidget {
@@ -74,6 +76,28 @@ class LeftDrawer extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (context) => const ExperienceFormPage(),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.work_outline),
+            title: const Text('Experience'),
+            // Navigasi ke halaman pengalaman
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const ExperienceListPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.work_outline),
+            title: const Text('Skill'),
+            // Navigasi ke halaman skill
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const SkillListPage()),
               );
             },
           ),
