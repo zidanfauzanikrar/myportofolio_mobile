@@ -1,16 +1,23 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/experience_list.dart';
+import 'package:myportofolio_mobile/screens/login_screen.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/skill_form.dart';
 import 'package:myportofolio_mobile/screens/skill_list.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
 import 'package:myportofolio_mobile/utils/theme_controller.dart';
+import 'package:provider/provider.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // watch: drawer dibangun ulang otomatis saat status login berubah.
+    final isLoggedIn = context.watch<AuthState>().isLoggedIn;
+
     return Drawer(
       child: ListView(
         children: [
@@ -56,7 +63,7 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.lightbulb_outline),
             title: const Text('Skills'),
-            // Navigasi ke daftar skill dari API
+            // Navigasi ke daftar skill dari API (publik)
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -69,10 +76,12 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.add_circle_outline),
             title: const Text('Add Skill'),
-            // Navigasi ke halaman tambah skill
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
+            // Dilindungi: wajib login dulu sebelum membuka form.
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              final loggedIn = await ensureLoggedIn(context);
+              if (!loggedIn) return;
+              navigator.pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => const SkillFormPage(),
                 ),
@@ -82,7 +91,7 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.work_outline),
             title: const Text('Experience'),
-            // Navigasi ke daftar pengalaman dari API
+            // Navigasi ke daftar pengalaman dari API (publik)
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -95,10 +104,12 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.add_circle_outline),
             title: const Text('Add Experience'),
-            // Navigasi ke halaman tambah pengalaman
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
+            // Dilindungi: wajib login dulu sebelum membuka form.
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              final loggedIn = await ensureLoggedIn(context);
+              if (!loggedIn) return;
+              navigator.pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => const ExperienceFormPage(),
                 ),
@@ -124,6 +135,38 @@ class LeftDrawer extends StatelessWidget {
               );
             },
           ),
+          // Login saat belum login, Logout saat sudah login.
+          if (!isLoggedIn)
+            ListTile(
+              leading: const Icon(Icons.login),
+              title: const Text('Login'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(),
+                  ),
+                );
+              },
+            )
+          else
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () async {
+                // Ambil dulu semua yang dibutuhkan sebelum drawer ditutup
+                // dan sebelum await, agar tidak memakai context sesudahnya.
+                final auth = context.read<AuthState>();
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context); // tutup drawer
+                await auth.logout();
+                messenger
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(content: Text('Berhasil logout.')),
+                  );
+              },
+            ),
         ],
       ),
     );

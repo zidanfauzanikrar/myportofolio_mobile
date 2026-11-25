@@ -1,6 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/skill.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
 
 class SkillFormPage extends StatefulWidget {
   const SkillFormPage({super.key});
@@ -19,6 +23,7 @@ class _SkillFormPageState extends State<SkillFormPage> {
   String _description = "";
   // Kunci kategori mengikuti SKILL_CHOICES di backend (misalnya 'soft_skill').
   String _category = Skill.categoryLabels.keys.first; // default
+  bool _isSubmitting = false;
 
   // Mengosongkan form sekaligus variabel penampungnya
   void _resetForm() {
@@ -28,6 +33,89 @@ class _SkillFormPageState extends State<SkillFormPage> {
       _description = "";
       _category = Skill.categoryLabels.keys.first;
     });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    // Pastikan sudah login; jika belum, buka LoginScreen.
+    final loggedIn = await ensureLoggedIn(context);
+    if (!loggedIn || !mounted) return;
+
+    final auth = context.read<AuthState>();
+    final apiClient = context.read<ApiClient>();
+    final token = auth.token;
+    if (token == null) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final newSkill = Skill(
+        title: _title.trim(),
+        description: _description.trim(),
+        category: _category,
+      );
+      final created = await apiClient.createSkill(newSkill, token: token);
+      if (!mounted) return;
+
+      // 201 Created: tampilkan dialog konfirmasi.
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Skill berhasil ditambahkan!'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Nama: ${created.title}'),
+                  Text('Deskripsi: ${created.description}'),
+                  Text('Kategori: ${created.categoryLabel}'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      _resetForm();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401) {
+        // Token tidak berlaku lagi: keluar, lalu minta login ulang.
+        await auth.logout();
+        if (!mounted) return;
+        _showMessage('Sesi berakhir. Silakan login kembali.');
+        await ensureLoggedIn(context);
+      } else {
+        final detail = e.statusCode == 400 ? '\n${e.message}' : '';
+        _showMessage('Gagal menyimpan skill (kode ${e.statusCode}).$detail');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Tidak dapat terhubung ke server.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -138,40 +226,8 @@ class _SkillFormPageState extends State<SkillFormPage> {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Skill berhasil ditambahkan!'),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Nama: $_title'),
-                                    Text('Deskripsi: $_description'),
-                                    Text(
-                                      'Kategori: ${Skill.categoryLabels[_category] ?? _category}',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _resetForm();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
-                    child: const Text('Save'),
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: Text(_isSubmitting ? 'Menyimpan...' : 'Save'),
                   ),
                 ),
               ),

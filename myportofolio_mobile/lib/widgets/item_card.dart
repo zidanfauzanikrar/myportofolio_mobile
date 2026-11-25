@@ -4,6 +4,9 @@ import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/skill_form.dart';
 import 'package:myportofolio_mobile/screens/skill_list.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:provider/provider.dart';
 
 class ItemCard extends StatelessWidget {
   final ItemHomepage item;
@@ -22,39 +25,62 @@ class ItemCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
-        onTap: () {
+        onTap: () async {
+          // Ambil dulu objek yang dibutuhkan sebelum ada await.
+          final messenger = ScaffoldMessenger.of(context);
+          final navigator = Navigator.of(context);
+          final auth = context.read<AuthState>();
+
           // Menampilkan SnackBar dengan pesan interaktif.
-          ScaffoldMessenger.of(context)
+          messenger
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(content: Text("Kamu telah menekan tombol ${item.name}!")),
             );
 
-          // Membuka halaman sesuai tombol yang ditekan.
           if (item.name == "Lihat Skill") {
-            Navigator.push(
-              context,
+            // Publik: tidak perlu login.
+            navigator.push(
               MaterialPageRoute(builder: (context) => const SkillListPage()),
             );
-          } else if (item.name == "Tambah Skill") {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SkillFormPage()),
-            );
           } else if (item.name == "Lihat Pengalaman") {
-            Navigator.push(
-              context,
+            // Publik: tidak perlu login.
+            navigator.push(
               MaterialPageRoute(
                 builder: (context) => const ExperienceListPage(),
               ),
             );
+          } else if (item.name == "Tambah Skill") {
+            // Dilindungi: wajib login.
+            final loggedIn = await ensureLoggedIn(context);
+            if (!loggedIn) return;
+            navigator.push(
+              MaterialPageRoute(builder: (context) => const SkillFormPage()),
+            );
           } else if (item.name == "Tambah Pengalaman") {
-            Navigator.push(
-              context,
+            // Dilindungi: wajib login.
+            final loggedIn = await ensureLoggedIn(context);
+            if (!loggedIn) return;
+            navigator.push(
               MaterialPageRoute(
                 builder: (context) => const ExperienceFormPage(),
               ),
             );
+          } else if (item.name == "Logout") {
+            if (auth.isLoggedIn) {
+              await auth.logout();
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  const SnackBar(content: Text('Berhasil logout.')),
+                );
+            } else {
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  const SnackBar(content: Text('Kamu belum login.')),
+                );
+            }
           }
         },
         child: Container(
