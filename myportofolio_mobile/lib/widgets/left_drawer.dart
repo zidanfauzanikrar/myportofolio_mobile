@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
-import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/screens/skill_form.dart';
 import 'package:myportofolio_mobile/screens/skill_list.dart';
 import 'package:myportofolio_mobile/utils/theme_controller.dart';
 
@@ -31,7 +31,7 @@ class LeftDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Explore personal projects and experiences!',
+                  'Explore personal skills and experiences!',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.white,
@@ -54,14 +54,40 @@ class LeftDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: const Text('Add Project'),
-            // Navigasi ke halaman tambah proyek
+            leading: const Icon(Icons.lightbulb_outline),
+            title: const Text('Skills'),
+            // Navigasi ke daftar skill dari API
             onTap: () {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ProjectFormPage(),
+                  builder: (context) => const SkillListPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Add Skill'),
+            // Navigasi ke halaman tambah skill
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SkillFormPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.work_outline),
+            title: const Text('Experience'),
+            // Navigasi ke daftar pengalaman dari API
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExperienceListPage(),
                 ),
               );
             },
@@ -79,28 +105,6 @@ class LeftDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.work_outline),
-            title: const Text('Experience'),
-            // Navigasi ke halaman pengalaman
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const ExperienceListPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.work_outline),
-            title: const Text('Skill'),
-            // Navigasi ke halaman skill
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SkillListPage()),
-              );
-            },
-          ),
           const Divider(),
           ValueListenableBuilder<ThemeMode>(
             valueListenable: themeModeNotifier,
@@ -114,7 +118,8 @@ class LeftDrawer extends StatelessWidget {
                 title: const Text('Dark Mode'),
                 value: mode == ThemeMode.dark,
                 onChanged: (bool isDark) {
-                  themeModeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+                  themeModeNotifier.value =
+                      isDark ? ThemeMode.dark : ThemeMode.light;
                 },
               );
             },

@@ -2,7 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
-import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/screens/skill_form.dart';
+import 'package:myportofolio_mobile/screens/skill_list.dart';
 
 class ItemCard extends StatelessWidget {
   final ItemHomepage item;
@@ -14,10 +15,9 @@ class ItemCard extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     // Di mode gelap, warna kartu digelapkan 40% agar tidak menyilaukan.
     final Color cardColor =
-      isDark ? Color.lerp(item.color, Colors.black, 0.6)! : item.color;
+        isDark ? Color.lerp(item.color, Colors.black, 0.4)! : item.color;
 
     return Material(
-      // Menggunakan warna sekunder dari skema tema aplikasi.
       color: cardColor,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -27,24 +27,33 @@ class ItemCard extends StatelessWidget {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(content: Text("Kamu telah menekan tombol ${item.name}!"))
+              SnackBar(content: Text("Kamu telah menekan tombol ${item.name}!")),
             );
-          if (item.name == "Tambah Proyek") {
+
+          // Membuka halaman sesuai tombol yang ditekan.
+          if (item.name == "Lihat Skill") {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProjectFormPage()),
+              MaterialPageRoute(builder: (context) => const SkillListPage()),
             );
-          }
-          if (item.name == "Tambah Pengalaman") {
+          } else if (item.name == "Tambah Skill") {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ExperienceFormPage()),
+              MaterialPageRoute(builder: (context) => const SkillFormPage()),
             );
-          }
-          if (item.name == "Lihat Pengalaman") {
+          } else if (item.name == "Lihat Pengalaman") {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ExperienceListPage()),
+              MaterialPageRoute(
+                builder: (context) => const ExperienceListPage(),
+              ),
+            );
+          } else if (item.name == "Tambah Pengalaman") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ExperienceFormPage(),
+              ),
             );
           }
         },

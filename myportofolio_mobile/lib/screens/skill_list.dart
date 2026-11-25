@@ -1,9 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/skill.dart';
+import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/services/skill_service.dart';
 import 'package:myportofolio_mobile/widgets/error_view.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
-import 'package:myportofolio_mobile/widgets/skill_card.dart';
+import 'package:myportofolio_mobile/widgets/item_card.dart';
 
 class SkillListPage extends StatefulWidget {
   const SkillListPage({super.key});
@@ -137,7 +138,7 @@ class _SkillListPageState extends State<SkillListPage> {
                       padding: const EdgeInsets.all(8.0),
                       itemCount: skills.length,
                       itemBuilder: (context, index) =>
-                          SkillCard(skill: skills[index]),
+                          ItemCard(skills[index] as ItemHomepage),
                     );
                   },
                 ),

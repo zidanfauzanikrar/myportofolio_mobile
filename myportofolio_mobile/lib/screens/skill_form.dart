@@ -1,39 +1,32 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/models/skill.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 
-class ProjectFormPage extends StatefulWidget {
-  const ProjectFormPage({super.key});
+class SkillFormPage extends StatefulWidget {
+  const SkillFormPage({super.key});
 
   @override
-  State<ProjectFormPage> createState() => _ProjectFormPageState();
+  State<SkillFormPage> createState() => _SkillFormPageState();
 }
 
-class _ProjectFormPageState extends State<ProjectFormPage> {
+class _SkillFormPageState extends State<SkillFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  static const List<String> _categories = [
-    'Web Development',
-    'Mobile Development',
-    'Machine Learning',
-    'Data Science',
-    'Other',
-  ];
+  // Batas panjang mengikuti model Django (title: max_length=255).
+  static const int _maxTitleLength = 255;
 
-  String _projectName = "";
+  String _title = "";
   String _description = "";
-  String _category = _categories.first; // default
-  String _technologies = "";
-  String _projectLink = "";
+  // Kunci kategori mengikuti SKILL_CHOICES di backend (misalnya 'soft_skill').
+  String _category = Skill.categoryLabels.keys.first; // default
 
   // Mengosongkan form sekaligus variabel penampungnya
   void _resetForm() {
     _formKey.currentState!.reset();
     setState(() {
-      _projectName = "";
+      _title = "";
       _description = "";
-      _category = _categories.first;
-      _technologies = "";
-      _projectLink = "";
+      _category = Skill.categoryLabels.keys.first;
     });
   }
 
@@ -43,7 +36,7 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
       appBar: AppBar(
         title: const Center(
           child: Text(
-            'Add Project Form',
+            'Add Skill Form',
           ),
         ),
         backgroundColor: Colors.indigo,
@@ -56,25 +49,28 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // === Project Name ===
+              // === Skill Title ===
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   decoration: InputDecoration(
-                    hintText: "Nama Proyek",
-                    labelText: "Nama Proyek",
+                    hintText: "Nama Skill",
+                    labelText: "Nama Skill",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
                   onChanged: (String value) {
                     setState(() {
-                      _projectName = value;
+                      _title = value;
                     });
                   },
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
-                      return "Nama proyek tidak boleh kosong!";
+                      return "Nama skill tidak boleh kosong!";
+                    }
+                    if (value.trim().length > _maxTitleLength) {
+                      return "Nama skill maksimal $_maxTitleLength karakter!";
                     }
                     return null;
                   },
@@ -87,8 +83,8 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                 child: TextFormField(
                   maxLines: 5,
                   decoration: InputDecoration(
-                    hintText: "Deskripsi Proyek",
-                    labelText: "Deskripsi Proyek",
+                    hintText: "Deskripsi Skill",
+                    labelText: "Deskripsi Skill",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
@@ -100,71 +96,33 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                   },
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
-                      return "Deskripsi proyek tidak boleh kosong!";
+                      return "Deskripsi skill tidak boleh kosong!";
                     }
                     return null;
                   },
                 ),
               ),
 
-              // === Category ===
+              // === Category (pilihan sama dengan SKILL_CHOICES di Django) ===
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: DropdownButtonFormField<String>(
                   decoration: InputDecoration(
-                    labelText: "Kategori Proyek",
+                    labelText: "Kategori Skill",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
-                  initialValue: _categories.first,
-                  items: _categories
-                      .map((category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
+                  initialValue: Skill.categoryLabels.keys.first,
+                  items: Skill.categoryLabels.entries
+                      .map((entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
                           ))
                       .toList(),
                   onChanged: (String? newValue) {
                     setState(() {
                       _category = newValue!;
-                    });
-                  },
-                ),
-              ),
-
-              // === Technologies ===
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    hintText: "Contoh: Flutter, Django, Figma",
-                    labelText: "Teknologi yang Digunakan",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  onChanged: (String value) {
-                    setState(() {
-                      _technologies = value;
-                    });
-                  },
-                ),
-              ),
-
-              // === Project Link ===
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    hintText: "URL Proyek (opsional)",
-                    labelText: "Tautan Proyek",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  onChanged: (String value) {
-                    setState(() {
-                      _projectLink = value;
                     });
                   },
                 ),
@@ -176,9 +134,9 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor:
-                          WidgetStateProperty.all(Colors.indigo),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
@@ -186,19 +144,15 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              title: const Text('Proyek berhasil ditambahkan!'),
+                              title: const Text('Skill berhasil ditambahkan!'),
                               content: SingleChildScrollView(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Nama: $_projectName'),
+                                    Text('Nama: $_title'),
                                     Text('Deskripsi: $_description'),
-                                    Text('Kategori: $_category'),
                                     Text(
-                                      'Teknologi: ${_technologies.isEmpty ? '-' : _technologies}',
-                                    ),
-                                    Text(
-                                      'Tautan: ${_projectLink.isEmpty ? '-' : _projectLink}',
+                                      'Kategori: ${Skill.categoryLabels[_category] ?? _category}',
                                     ),
                                   ],
                                 ),
@@ -217,10 +171,7 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                         );
                       }
                     },
-                    child: const Text(
-                      "Save",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: const Text('Save'),
                   ),
                 ),
               ),
