@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
-import 'package:myportofolio_mobile/services/experience_service.dart';
+import 'package:myportofolio_mobile/screens/experience_detail_screen.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/error_view.dart';
 import 'package:myportofolio_mobile/widgets/experience_card.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
 
 class ExperienceListPage extends StatefulWidget {
   const ExperienceListPage({super.key});
@@ -14,15 +16,24 @@ class ExperienceListPage extends StatefulWidget {
 
 class _ExperienceListPageState extends State<ExperienceListPage> {
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<Experience>> _futureExperiences;
+  late Future<List<Experience>> _experiencesFuture;
 
   // Kunci kategori yang dipilih (misalnya 'internship'); null berarti semua.
   String? _selectedCategory;
 
+  // Memanggil API dengan pencarian dan filter yang sedang aktif.
+  Future<List<Experience>> _fetch() =>
+      context.read<ApiClient>().getExperiences(
+            title: _searchController.text.trim(),
+            category: _selectedCategory,
+          );
+
   @override
   void initState() {
     super.initState();
-    _futureExperiences = fetchExperiences();
+    // Future dibuat sekali di initState, bukan di build(), agar permintaan
+    // HTTP tidak terkirim ulang setiap widget dibangun ulang.
+    _experiencesFuture = _fetch();
   }
 
   @override
@@ -31,14 +42,16 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
     super.dispose();
   }
 
-  // Memuat ulang daftar dari API dengan pencarian dan filter yang aktif.
-  void _reload() {
+  Future<void> _reload() async {
+    final future = _fetch();
     setState(() {
-      _futureExperiences = fetchExperiences(
-        title: _searchController.text.trim(),
-        category: _selectedCategory,
-      );
+      _experiencesFuture = future;
     });
+    try {
+      await future;
+    } catch (_) {
+      // Error ditampilkan oleh FutureBuilder.
+    }
   }
 
   Widget _buildCategoryChip({required String label, required String? value}) {
@@ -118,28 +131,66 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
               ),
               Expanded(
                 child: FutureBuilder<List<Experience>>(
-                  future: _futureExperiences,
+                  future: _experiencesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
+
                     if (snapshot.hasError) {
                       return ErrorView(
                         message: '${snapshot.error}',
                         onRetry: _reload,
                       );
                     }
-                    final experiences = snapshot.data ?? [];
+
+                    final experiences =
+                        snapshot.data ?? const <Experience>[];
+
+                    // Daftar kosong: pull-to-refresh tetap berfungsi.
                     if (experiences.isEmpty) {
-                      return const Center(
-                        child: Text('Belum ada pengalaman.'),
+                      return RefreshIndicator(
+                        onRefresh: _reload,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) =>
+                              SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: const Center(
+                                child: Text('Belum ada pengalaman.'),
+                              ),
+                            ),
+                          ),
+                        ),
                       );
                     }
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(8.0),
-                      itemCount: experiences.length,
-                      itemBuilder: (context, index) => 
-                        ExperienceCard(experience: experiences[index]),
+
+                    return RefreshIndicator(
+                      onRefresh: _reload,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(8.0),
+                        itemCount: experiences.length,
+                        itemBuilder: (context, index) {
+                          final experience = experiences[index];
+                          return ExperienceCard(
+                            experience: experience,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ExperienceDetailScreen(
+                                    experience: experience,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

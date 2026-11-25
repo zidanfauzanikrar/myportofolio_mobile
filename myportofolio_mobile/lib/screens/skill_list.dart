@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/skill.dart';
-import 'package:myportofolio_mobile/services/skill_service.dart';
+import 'package:myportofolio_mobile/screens/skill_detail_screen.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/error_view.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 import 'package:myportofolio_mobile/widgets/skill_card.dart';
+import 'package:provider/provider.dart';
 
 class SkillListPage extends StatefulWidget {
   const SkillListPage({super.key});
@@ -14,15 +16,23 @@ class SkillListPage extends StatefulWidget {
 
 class _SkillListPageState extends State<SkillListPage> {
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<Skill>> _futureSkills;
+  late Future<List<Skill>> _skillsFuture;
 
   // Kunci kategori yang dipilih (misalnya 'soft_skill'); null berarti semua.
   String? _selectedCategory;
 
+  // Memanggil API dengan pencarian dan filter yang sedang aktif.
+  Future<List<Skill>> _fetch() => context.read<ApiClient>().getSkills(
+        title: _searchController.text.trim(),
+        category: _selectedCategory,
+      );
+
   @override
   void initState() {
     super.initState();
-    _futureSkills = fetchSkills();
+    // Future dibuat sekali di initState, bukan di build(), agar permintaan
+    // HTTP tidak terkirim ulang setiap widget dibangun ulang.
+    _skillsFuture = _fetch();
   }
 
   @override
@@ -31,14 +41,16 @@ class _SkillListPageState extends State<SkillListPage> {
     super.dispose();
   }
 
-  // Memuat ulang daftar dari API dengan pencarian dan filter yang aktif.
-  void _reload() {
+  Future<void> _reload() async {
+    final future = _fetch();
     setState(() {
-      _futureSkills = fetchSkills(
-        title: _searchController.text.trim(),
-        category: _selectedCategory,
-      );
+      _skillsFuture = future;
     });
+    try {
+      await future;
+    } catch (_) {
+      // Error ditampilkan oleh FutureBuilder.
+    }
   }
 
   Widget _buildCategoryChip({required String label, required String? value}) {
@@ -118,26 +130,64 @@ class _SkillListPageState extends State<SkillListPage> {
               ),
               Expanded(
                 child: FutureBuilder<List<Skill>>(
-                  future: _futureSkills,
+                  future: _skillsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
+
                     if (snapshot.hasError) {
                       return ErrorView(
                         message: '${snapshot.error}',
                         onRetry: _reload,
                       );
                     }
-                    final skills = snapshot.data ?? [];
+
+                    final skills = snapshot.data ?? const <Skill>[];
+
+                    // Daftar kosong: pull-to-refresh tetap berfungsi.
                     if (skills.isEmpty) {
-                      return const Center(child: Text('Belum ada skill.'));
+                      return RefreshIndicator(
+                        onRefresh: _reload,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) =>
+                              SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: const Center(
+                                child: Text('Belum ada skill.'),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
                     }
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(8.0),
-                      itemCount: skills.length,
-                      itemBuilder: (context, index) =>
-                        SkillCard(skill: skills[index]),
+
+                    return RefreshIndicator(
+                      onRefresh: _reload,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(8.0),
+                        itemCount: skills.length,
+                        itemBuilder: (context, index) {
+                          final skill = skills[index];
+                          return SkillCard(
+                            skill: skill,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      SkillDetailScreen(skill: skill),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
