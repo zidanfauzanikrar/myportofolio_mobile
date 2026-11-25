@@ -1,9 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
-import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/services/experience_service.dart';
 import 'package:myportofolio_mobile/widgets/error_view.dart';
-import 'package:myportofolio_mobile/widgets/item_card.dart';
+import 'package:myportofolio_mobile/widgets/experience_card.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 
 class ExperienceListPage extends StatefulWidget {
@@ -139,8 +138,8 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
                     return ListView.builder(
                       padding: const EdgeInsets.all(8.0),
                       itemCount: experiences.length,
-                      itemBuilder: (context, index) =>
-                          ItemCard(experiences[index] as ItemHomepage),
+                      itemBuilder: (context, index) => 
+                        ExperienceCard(experience: experiences[index]),
                     );
                   },
                 ),
