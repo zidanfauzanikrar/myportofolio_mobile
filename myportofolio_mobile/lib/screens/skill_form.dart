@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/skill.dart';
+import 'package:myportofolio_mobile/screens/skill_list.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
@@ -94,6 +95,10 @@ class _SkillFormPageState extends State<SkillFormPage> {
       );
       if (!mounted) return;
       _resetForm();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SkillListPage()),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {

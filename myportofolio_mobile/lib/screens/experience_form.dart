@@ -123,15 +123,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
             actions: [
               TextButton(
                 child: const Text('OK'),
-                onPressed: () => {
-                  Navigator.pop(context),
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ExperienceListPage(),
-                    ),
-                  ),
-                },
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           );
@@ -139,6 +131,10 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       );
       if (!mounted) return;
       _resetForm();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ExperienceListPage()),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
