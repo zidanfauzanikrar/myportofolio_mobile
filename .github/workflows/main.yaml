@@ -13,6 +13,7 @@ jobs:
   build:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v2
     with:
+      working_directory: myportofolio_mobile
       setup: dart run build_runner build --delete-conflicting-outputs
       coverage_excludes: "**/*.g.dart"
       min_coverage: 0
@@ -21,6 +22,9 @@ jobs:
   build_apk:
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: myportofolio_mobile
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -37,4 +41,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: myportofolio_mobile/build/app/outputs/flutter-apk/app-release.apk
