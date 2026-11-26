@@ -1,3 +1,5 @@
+![CI](https://github.com/zidanfauzanikrar/myportofolio_mobile/actions/workflows/main.yaml/badge.svg)
+
 # MyPortfolio Mobile
 
 Aplikasi Flutter sederhana sebagai halaman utama portofolio pribadi, dibuat untuk tugas PBP. Repositori ini terpisah dari repositori Django.
