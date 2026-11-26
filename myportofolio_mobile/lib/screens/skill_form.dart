@@ -122,11 +122,7 @@ class _SkillFormPageState extends State<SkillFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(
-          child: Text(
-            'Add Skill Form',
-          ),
-        ),
+        title: const Center(child: Text('Add Skill Form')),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -203,10 +199,12 @@ class _SkillFormPageState extends State<SkillFormPage> {
                   ),
                   initialValue: Skill.categoryLabels.keys.first,
                   items: Skill.categoryLabels.entries
-                      .map((entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ))
+                      .map(
+                        (entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (String? newValue) {
                     setState(() {

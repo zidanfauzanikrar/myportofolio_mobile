@@ -10,9 +10,17 @@ class MyHomePage extends StatelessWidget {
   final String kelas = "PBP E";
 
   final List<ItemHomepage> items = [
-    ItemHomepage("Lihat Skill", Icons.lightbulb_outline, Colors.lightBlueAccent),
+    ItemHomepage(
+      "Lihat Skill",
+      Icons.lightbulb_outline,
+      Colors.lightBlueAccent,
+    ),
     ItemHomepage("Tambah Skill", Icons.add_circle, Colors.green),
-    ItemHomepage("Lihat Pengalaman", Icons.work_outline, Colors.lightBlueAccent),
+    ItemHomepage(
+      "Lihat Pengalaman",
+      Icons.work_outline,
+      Colors.lightBlueAccent,
+    ),
     ItemHomepage("Tambah Pengalaman", Icons.add_circle, Colors.green),
     ItemHomepage("Logout", Icons.logout, Colors.redAccent),
   ];
@@ -25,13 +33,10 @@ class MyHomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'MyPortfolio',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.indigo,
-        iconTheme: const IconThemeData(color: Colors.white)
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: const LeftDrawer(),
       // Body halaman utama dengan padding di sekelilingnya.
@@ -56,10 +61,7 @@ class MyHomePage extends StatelessWidget {
               padding: EdgeInsets.only(top: 16.0),
               child: Text(
                 'Selamat datang di MyPortfolio Mobile!',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18.0,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
               ),
             ),
 
@@ -106,10 +108,7 @@ class InfoCard extends StatelessWidget {
         // Menyusun teks title dan content secara vertikal.
         child: Column(
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8.0),
             Text(content),
           ],

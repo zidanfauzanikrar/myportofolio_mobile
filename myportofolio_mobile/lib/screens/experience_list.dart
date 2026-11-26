@@ -22,11 +22,10 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
   String? _selectedCategory;
 
   // Memanggil API dengan pencarian dan filter yang sedang aktif.
-  Future<List<Experience>> _fetch() =>
-      context.read<ApiClient>().getExperiences(
-            title: _searchController.text.trim(),
-            category: _selectedCategory,
-          );
+  Future<List<Experience>> _fetch() => context.read<ApiClient>().getExperiences(
+    title: _searchController.text.trim(),
+    category: _selectedCategory,
+  );
 
   @override
   void initState() {
@@ -122,10 +121,7 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
                   children: [
                     _buildCategoryChip(label: 'Semua', value: null),
                     for (final entry in Experience.categoryLabels.entries)
-                      _buildCategoryChip(
-                        label: entry.value,
-                        value: entry.key,
-                      ),
+                      _buildCategoryChip(label: entry.value, value: entry.key),
                   ],
                 ),
               ),
@@ -144,8 +140,7 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
                       );
                     }
 
-                    final experiences =
-                        snapshot.data ?? const <Experience>[];
+                    final experiences = snapshot.data ?? const <Experience>[];
 
                     // Daftar kosong: pull-to-refresh tetap berfungsi.
                     if (experiences.isEmpty) {
@@ -154,16 +149,16 @@ class _ExperienceListPageState extends State<ExperienceListPage> {
                         child: LayoutBuilder(
                           builder: (context, constraints) =>
                               SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: const Center(
+                                    child: Text('Belum ada pengalaman.'),
+                                  ),
+                                ),
                               ),
-                              child: const Center(
-                                child: Text('Belum ada pengalaman.'),
-                              ),
-                            ),
-                          ),
                         ),
                       );
                     }

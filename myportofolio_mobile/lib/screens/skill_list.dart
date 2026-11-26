@@ -23,9 +23,9 @@ class _SkillListPageState extends State<SkillListPage> {
 
   // Memanggil API dengan pencarian dan filter yang sedang aktif.
   Future<List<Skill>> _fetch() => context.read<ApiClient>().getSkills(
-        title: _searchController.text.trim(),
-        category: _selectedCategory,
-      );
+    title: _searchController.text.trim(),
+    category: _selectedCategory,
+  );
 
   @override
   void initState() {
@@ -121,10 +121,7 @@ class _SkillListPageState extends State<SkillListPage> {
                   children: [
                     _buildCategoryChip(label: 'Semua', value: null),
                     for (final entry in Skill.categoryLabels.entries)
-                      _buildCategoryChip(
-                        label: entry.value,
-                        value: entry.key,
-                      ),
+                      _buildCategoryChip(label: entry.value, value: entry.key),
                   ],
                 ),
               ),
@@ -152,16 +149,16 @@ class _SkillListPageState extends State<SkillListPage> {
                         child: LayoutBuilder(
                           builder: (context, constraints) =>
                               SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: const Center(
+                                    child: Text('Belum ada skill.'),
+                                  ),
+                                ),
                               ),
-                              child: const Center(
-                                child: Text('Belum ada skill.'),
-                              ),
-                            ),
-                          ),
                         ),
                       );
                     }

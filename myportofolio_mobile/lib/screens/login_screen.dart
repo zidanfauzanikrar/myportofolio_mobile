@@ -34,16 +34,18 @@ class _LoginScreenState extends State<LoginScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('Login gagal (kode ${e.statusCode}). Periksa username dan password.'),
+            content: Text(
+              'Login gagal (kode ${e.statusCode}). Periksa username dan password.',
+            ),
           ),
         );
     } catch (_) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Tidak dapat terhubung ke server.')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('Tidak dapat terhubung ke server.')),
+        );
     } finally {
       if (mounted) {
         setState(() {

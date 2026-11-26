@@ -41,14 +41,14 @@ class ExperienceDetailScreen extends StatelessWidget {
                       // Jika gambar gagal dimuat (URL salah atau diblokir CORS).
                       errorBuilder: (context, error, stackTrace) =>
                           const SizedBox(
-                        height: 220.0,
-                        child: Center(
-                          child: Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 48.0,
+                            height: 220.0,
+                            child: Center(
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 48.0,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 16.0),

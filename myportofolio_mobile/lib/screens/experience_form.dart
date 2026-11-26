@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
+import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
@@ -122,7 +123,15 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
             actions: [
               TextButton(
                 child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => {
+                  Navigator.pop(context),
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExperienceListPage(),
+                    ),
+                  ),
+                },
               ),
             ],
           );
@@ -160,11 +169,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(
-          child: Text(
-            'Add Experience Form',
-          ),
-        ),
+        title: const Center(child: Text('Add Experience Form')),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -241,10 +246,12 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   ),
                   initialValue: _defaultCategory,
                   items: Experience.categoryLabels.entries
-                      .map((entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ))
+                      .map(
+                        (entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ),
+                      )
                       .toList(),
                   onChanged: (String? newValue) {
                     setState(() {
@@ -275,7 +282,8 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                     final text = value?.trim() ?? '';
                     if (text.isEmpty) return null; // opsional
                     final uri = Uri.tryParse(text);
-                    final valid = uri != null &&
+                    final valid =
+                        uri != null &&
                         uri.hasAuthority &&
                         (uri.scheme == 'http' || uri.scheme == 'https');
                     return valid

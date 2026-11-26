@@ -17,8 +17,9 @@ class ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     // Di mode gelap, warna kartu digelapkan 40% agar tidak menyilaukan.
-    final Color cardColor =
-        isDark ? Color.lerp(item.color, Colors.black, 0.4)! : item.color;
+    final Color cardColor = isDark
+        ? Color.lerp(item.color, Colors.black, 0.4)!
+        : item.color;
 
     return Material(
       color: cardColor,
@@ -35,7 +36,9 @@ class ItemCard extends StatelessWidget {
           messenger
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(content: Text("Kamu telah menekan tombol ${item.name}!")),
+              SnackBar(
+                content: Text("Kamu telah menekan tombol ${item.name}!"),
+              ),
             );
 
           if (item.name == "Lihat Skill") {
@@ -89,11 +92,7 @@ class ItemCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  item.icon,
-                  color: Colors.white,
-                  size: 30.0,
-                ),
+                Icon(item.icon, color: Colors.white, size: 30.0),
                 const Padding(padding: EdgeInsets.all(3)),
                 Text(
                   item.name,

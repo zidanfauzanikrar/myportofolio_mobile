@@ -22,9 +22,7 @@ class LeftDrawer extends StatelessWidget {
       child: ListView(
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.indigo,
-            ),
+            decoration: BoxDecoration(color: Colors.indigo),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -39,10 +37,7 @@ class LeftDrawer extends StatelessWidget {
                 SizedBox(height: 10),
                 Text(
                   'Explore personal skills and experiences!',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 15, color: Colors.white),
                 ),
               ],
             ),
@@ -54,9 +49,7 @@ class LeftDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => MyHomePage(),
-                ),
+                MaterialPageRoute(builder: (context) => MyHomePage()),
               );
             },
           ),
@@ -67,9 +60,7 @@ class LeftDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SkillListPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const SkillListPage()),
               );
             },
           ),
@@ -82,9 +73,7 @@ class LeftDrawer extends StatelessWidget {
               final loggedIn = await ensureLoggedIn(context);
               if (!loggedIn) return;
               navigator.pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const SkillFormPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const SkillFormPage()),
               );
             },
           ),
@@ -129,8 +118,9 @@ class LeftDrawer extends StatelessWidget {
                 title: const Text('Dark Mode'),
                 value: mode == ThemeMode.dark,
                 onChanged: (bool isDark) {
-                  themeModeNotifier.value =
-                      isDark ? ThemeMode.dark : ThemeMode.light;
+                  themeModeNotifier.value = isDark
+                      ? ThemeMode.dark
+                      : ThemeMode.light;
                 },
               );
             },
@@ -143,9 +133,7 @@ class LeftDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
                 );
               },
             )
