@@ -387,3 +387,164 @@ Menggunakan Claude Sonnet 5.5 High untuk membantu menambahkan field yang menggun
 https://claude.ai/share/fc6126cf-faf3-44a2-a56e-ded772f49f48
 
 
+
+![CI](https://github.com/<USERNAME>/<REPOSITORY>/actions/workflows/main.yaml/badge.svg)
+
+# MyPortofolio Mobile
+
+Aplikasi Flutter untuk portofolio pribadi (Skill dan Experience) yang terhubung ke backend Django REST Framework. Aplikasi menampilkan data publik tanpa login, dan menambah, mengubah, serta menghapus data memakai autentikasi token.
+
+## Tautan
+
+| Keterangan | Tautan |
+|---|---|
+| Repositori backend Django | <ISI SENDIRI> |
+| URL API yang sudah di-deploy | https://zidan-fauzan-myportofolio.pws.cs.ui.ac.id |
+| Contoh endpoint publik | https://zidan-fauzan-myportofolio.pws.cs.ui.ac.id/api/v1/skills/ |
+
+## Fitur
+
+- Model JSON dengan `json_serializable` (`@JsonSerializable(fieldRename: FieldRename.snake)`).
+- List Screen Skill dan Experience: `FutureBuilder`, `RefreshIndicator`, pencarian judul, filter kategori, serta state loading, error (tombol Retry), dan kosong.
+- Detail Screen yang menampilkan seluruh field entri yang diketuk.
+- Login memakai token DRF, dengan penanganan sesi berakhir (status 401).
+- Form tambah data yang memerlukan login (`ensureLoggedIn`) dan mengirim `POST`.
+- Fitur ekstra:
+  - Edit data memakai form yang sama (mode edit) dan mengirim `PATCH`.
+  - Hapus data dengan dialog konfirmasi dan mengirim `DELETE`.
+  - Tombol edit dan hapus hanya muncul untuk pengguna yang sudah login.
+  - Status Experience: dianggap berlangsung bila tanggal selesai kosong atau masih di masa depan.
+  - Unit test `ApiClient` dengan `MockClient`.
+
+## Struktur Proyek
+
+Proyek Flutter berada di folder `myportofolio_mobile/`. Folder `.github/` berada di root repositori.
+
+```
+.
+├── .github/workflows/main.yaml
+├── README.md
+└── myportofolio_mobile/
+    ├── lib/
+    │   ├── models/        # Skill, Experience (+ *.g.dart hasil generate)
+    │   ├── services/      # ApiClient, AuthState
+    │   ├── screens/       # list, detail, form, login
+    │   ├── widgets/       # kartu, drawer, error view
+    │   └── utils/         # format tanggal, pesan error API
+    ├── test/              # unit test
+    └── pubspec.yaml
+```
+
+## Cara Menjalankan
+
+Semua perintah dijalankan dari folder `myportofolio_mobile/`.
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run --dart-define=API_BASE_URL=https://zidan-fauzan-myportofolio.pws.cs.ui.ac.id
+```
+
+Nilai `API_BASE_URL` menyesuaikan tempat aplikasi dijalankan:
+
+| Dijalankan di | Nilai `API_BASE_URL` |
+|---|---|
+| Server yang sudah di-deploy | `https://zidan-fauzan-myportofolio.pws.cs.ui.ac.id` |
+| Chrome (web) dengan Django lokal | `http://localhost:8000` |
+| Emulator Android dengan Django lokal | `http://10.0.2.2:8000` (bawaan) |
+| HP fisik dengan Django lokal | `http://<IP-LAN-PC>:8000` |
+
+File `*.g.dart` tidak ikut di repositori, jadi `build_runner` wajib dijalankan setelah clone dan setiap kali model berubah.
+
+Untuk membangun APK rilis secara lokal:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://zidan-fauzan-myportofolio.pws.cs.ui.ac.id
+```
+
+Pengujian dan pemeriksaan kode:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+## Endpoint API yang Dipakai
+
+| Metode | Endpoint | Autentikasi |
+|---|---|---|
+| POST | `/api/v1/auth/token/` | Tidak (username dan password) |
+| POST | `/api/v1/auth/logout/` | Token |
+| GET | `/api/v1/skills/` dan `/api/v1/experience/` | Tidak |
+| POST | `/api/v1/skills/` dan `/api/v1/experience/` | Token (superuser) |
+| PATCH | `/api/v1/skills/<id>/` dan `/api/v1/experience/<id>/` | Token (izin `change_*`) |
+| DELETE | `/api/v1/skills/<id>/` dan `/api/v1/experience/<id>/` | Token (izin `delete_*`) |
+
+Header autentikasi: `Authorization: Token <key>`.
+
+## CI/CD
+
+Workflow `.github/workflows/main.yaml` berjalan pada setiap push ke `main` dan setiap pull request. Hasil build APK rilis dapat diunduh dari artefak `app-release-apk` pada halaman run di tab Actions.
+
+---
+
+## Jawaban Pertanyaan Reflektif
+
+### 1. Mengapa memakai `@JsonSerializable(fieldRename: FieldRename.snake)` dan `@JsonKey(includeToJson: false)`, bukan `Map<String, dynamic>` mentah dari widget?
+
+`Map<String, dynamic>` mentah tidak diperiksa oleh compiler. Nama kunci hanyalah string, dan tipe nilainya baru ketahuan saat aplikasi berjalan. Dengan `json_serializable`, pemetaan antara field Dart dan kunci JSON dibuat otomatis oleh kode hasil generate, sehingga ada satu tempat yang menjadi sumber kebenaran (kelas model) dan widget tidak perlu tahu format JSON.
+
+- `fieldRename: FieldRename.snake` memetakan field Dart bergaya camelCase (`endedAt`, `starCount`, `categoryDisplay`) ke kunci snake_case yang dipakai serializer DRF (`ended_at`, `star_count`, `category_display`) secara konsisten.
+- `includeToJson: false` menandai field yang hanya dibaca dari server (`id`, `startedAt`, `starCount`, `isStarred`, `categoryDisplay`) agar tidak ikut dikirim saat `POST` atau `PATCH`.
+
+Satu bug yang dicegah pada model bagian saya (Experience): jika form menyusun `Map` secara manual dan salah menulis kunci, misalnya `'endedAt'` alih-alih `'ended_at'`, kode tetap lolos kompilasi dan server DRF menerima request tanpa error. DRF mengabaikan kunci yang tidak dikenalnya, sehingga tanggal selesai tidak pernah tersimpan dan pengalaman tetap berstatus berlangsung. Gejalanya diam-diam dan sulit dilacak. Dengan `FieldRename.snake`, `endedAt` selalu menjadi `ended_at` karena dihasilkan oleh generator. Selain itu, tanpa `includeToJson: false`, nilai seperti `starCount` atau `startedAt` (yang diisi server lewat `auto_now_add`) bisa ikut terkirim dari data lama yang sudah usang. Nilai bawaan seperti `@JsonKey(defaultValue: 0)` pada `starCount` juga mencegah error null ketika sebuah kunci tidak ada di respons.
+
+### 2. Mengapa `Future` untuk `FutureBuilder` dibuat di `initState()`, dan mengapa `ApiClient` melempar `ApiException` dan tidak mengembalikan `null`?
+
+`build()` dapat dipanggil berkali-kali dan kapan saja: saat `setState`, pengguna mengetik di kolom pencarian, layar diputar, keyboard muncul, tema berubah, atau widget induk dibangun ulang. Jika `Future` dibuat di dalam `build()`, setiap pemanggilan memulai request HTTP baru dan `FutureBuilder` mendapat `Future` yang berbeda, sehingga kembali ke status loading. Akibatnya terjadi request berulang, kedipan tampilan, dan pemborosan kuota atau beban server. `initState()` hanya berjalan sekali per objek State, jadi `Future` dibuat satu kali dan disimpan dalam field. Pemuatan ulang dilakukan secara eksplisit lewat `_reload()` yang membuat `Future` baru di dalam `setState`, misalnya saat pull-to-refresh, tombol Retry, atau perubahan filter.
+
+`ApiClient` melempar `ApiException` (berisi kode status dan pesan) karena `null` membuang informasi. Dengan `null`, pemanggil tidak bisa membedakan 401 (token tidak berlaku, perlu login ulang), 403 (tidak punya izin), 404 (data tidak ada), 400 (validasi gagal, isi pesan perlu ditampilkan), 500, atau masalah jaringan. Pemanggil juga bisa lupa memeriksa `null` sehingga kegagalan dianggap berhasil. Exception memaksa kegagalan ditangani secara eksplisit: `FutureBuilder` menampilkan state error lewat `snapshot.hasError`, form menangkap `on ApiException` untuk menampilkan `SnackBar` yang sesuai, dan kode 401 memicu logout dan login ulang.
+
+### 3. `SessionAuthentication` dibandingkan dengan `TokenAuthentication`, dan mengapa keduanya aktif
+
+| Aspek | `SessionAuthentication` | `TokenAuthentication` |
+|---|---|---|
+| Bukti identitas | Cookie `sessionid` yang dibuat saat login | Header `Authorization: Token <key>` |
+| Penyimpanan di server | Tabel sesi Django | Tabel `authtoken_token` |
+| Pengiriman | Otomatis oleh browser pada setiap request | Dikirim eksplisit oleh klien |
+| Perlindungan CSRF | Wajib untuk metode tidak aman (POST, PATCH, DELETE) | Tidak diperlukan karena token tidak dikirim otomatis |
+| Cocok untuk | Situs web berbasis template dan browser | Aplikasi mobile dan klien non-browser |
+
+`myportofolio_mobile` memakai `TokenAuthentication` karena aplikasi Flutter berjalan di luar browser (kecuali versi web): tidak ada cookie jar yang konsisten di semua platform (terutama di Android dan iOS), dan request lintas origin dari Flutter web tidak membawa cookie sesi secara bawaan. Dengan token, aplikasi cukup menyimpan satu string hasil `POST /api/v1/auth/token/` dan mengirimkannya di header, tanpa perlu mengurus CSRF token.
+
+`SessionAuthentication` tetap aktif di backend karena situs web Django yang sama (halaman template dari tutorial sebelumnya, halaman admin `/admin/`, dan browsable API di `/api-auth/`) masih memakai login berbasis sesi. Keduanya didaftarkan di `DEFAULT_AUTHENTICATION_CLASSES`, dengan `TokenAuthentication` di urutan pertama sehingga request tanpa kredensial dijawab 401 dan tidak 403 dan klien mobile dapat mengenali kebutuhan login ulang. Kedua mekanisme saling melengkapi: browser memakai sesi, aplikasi mobile memakai token.
+
+Catatan dari pengalaman proyek ini: dekorator `@authentication_classes([SessionAuthentication])` pada view DRF menimpa pengaturan global, sehingga header token diabaikan dan request dari Flutter dianggap anonim (403, "Authentication credentials were not provided."). Dekorator itu dihapus agar kedua metode berlaku.
+
+### 4. Peran job `build` dan `build_apk`, serta alasan `*.g.dart` ada di `.gitignore`
+
+**Job `build`** memanggil workflow reusable `VeryGoodOpenSource/very_good_workflows` (`flutter_package.yml`). Berdasarkan log CI proyek ini, job tersebut menyiapkan Flutter, menjalankan perintah `setup` (`dart run build_runner build --delete-conflicting-outputs`) untuk membuat file hasil generate, lalu menjalankan:
+
+- pemeriksaan format: `dart format --set-exit-if-changed lib test` (gagal bila ada file yang belum terformat),
+- analisis statis: `flutter analyze` (info, peringatan, dan error dianggap kegagalan),
+- pengujian: `flutter test` dengan pengumpulan cakupan, dengan ambang `min_coverage` (di proyek ini 0) dan pengecualian `coverage_excludes: "**/*.g.dart"`.
+
+**Job `build_apk`** berjalan setelah `build` berhasil (`needs: build`). Job ini melakukan checkout, memasang Flutter (channel stable), menjalankan `flutter pub get` dan `build_runner`, membangun APK rilis dengan `flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}`, lalu mengunggah `app-release.apk` sebagai artefak `app-release-apk` lewat `actions/upload-artifact@v4`. Karena `needs: build`, APK tidak dibuat dari kode yang gagal format, analisis, atau tes.
+
+**Mengapa `*.g.dart` di `.gitignore` padahal CI membutuhkannya?** File `*.g.dart` adalah turunan yang dapat dibuat ulang sepenuhnya dari model beranotasi dan versi `build_runner` serta `json_serializable`. Menyimpannya di git menimbulkan beberapa masalah: diff dan konflik merge yang berisik, risiko file usang yang tidak sinkron dengan model jika lupa menjalankan generator, dan duplikasi sumber kebenaran. Cukup model `.dart` yang menjadi sumber, dan CI membuat ulang file tersebut di langkah `setup` dan `Generate code` pada setiap run, sehingga hasilnya selalu sesuai dengan kode terbaru. Karena itu `build_runner`, `json_serializable`, dan `json_annotation` harus terdaftar di `pubspec.yaml`; saat paket-paket ini belum ada, CI sempat gagal dengan pesan `Could not find package build_runner`. File hasil generate juga dikecualikan dari analisis (`analyzer: exclude: ["**/*.g.dart"]` di `analysis_options.yaml`) dan dari perhitungan cakupan (`coverage_excludes`), supaya kode otomatis tidak memunculkan peringatan lint dan tidak menurunkan angka cakupan. Konsekuensinya, developer yang baru clone wajib menjalankan `dart run build_runner build --delete-conflicting-outputs` sebelum `flutter run` atau `flutter test`, dan langkah itu sudah dicantumkan di bagian "Cara Menjalankan".
+
+---
+
+## AI Disclosure
+
+Menggunakan Claude Sonnet 5.5 Medium untuk membantu mengubah item portofolio dari project menjadi skill agar sesuai dengan tugas individu Django dan endpointnya tersambung secara seragam. Selain itu, membantu melengkapi file untuk CI/CD serta debugging file-file terkait itu agar build di Github berhasil. AI tersebut juga saya gunakan untuk menambahkan fitur ekstra berupa PATCH dan DELETE terautentikasi beserta test api clientnya. Namun, saat testing manual saya menyadari bahwa ada masalah di mana jika experience selesai di masa depan, statusnya tetap completed. Akhirnya saya ubah dengan bantuan AI tersebut di Django dan di aplikasi Flutter ini agar statusnya tetap ongoing jika masa berakhirnya di masa depan.
+
+
+## Link Log Chat AI
+
+https://claude.ai/share/42e6aefa-0953-41fb-977f-3549045691c2
+
+
+
+
