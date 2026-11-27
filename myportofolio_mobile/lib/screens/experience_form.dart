@@ -4,12 +4,16 @@ import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/utils/api_errors.dart';
 import 'package:myportofolio_mobile/utils/format.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 import 'package:provider/provider.dart';
 
 class ExperienceFormPage extends StatefulWidget {
-  const ExperienceFormPage({super.key});
+  const ExperienceFormPage({super.key, this.experience});
+
+  /// Bila diisi, form berjalan dalam mode edit (PATCH) untuk experience ini.
+  final Experience? experience;
 
   @override
   State<ExperienceFormPage> createState() => _ExperienceFormPageState();
@@ -31,6 +35,33 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
   String _thumbnail = "";
   DateTime? _endedAt; // null = masih berlangsung
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.experience != null;
+
+  // Kategori awal: milik experience yang diedit, atau default model.
+  String get _initialCategory {
+    final category = widget.experience?.category;
+    return category != null && Experience.categoryLabels.containsKey(category)
+        ? category
+        : _defaultCategory;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final experience = widget.experience;
+    if (experience != null) {
+      _title = experience.title;
+      _description = experience.description;
+      _thumbnail = experience.thumbnail ?? '';
+      _endedAt = experience.endedAt;
+      final endedAt = experience.endedAt;
+      if (endedAt != null) {
+        _endDateController.text = formatDate(endedAt);
+      }
+    }
+    _category = _initialCategory;
+  }
 
   @override
   void dispose() {
@@ -84,6 +115,14 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
     final token = auth.token;
     if (token == null) return;
 
+    final editId = widget.experience?.id;
+    if (_isEditing && editId == null) {
+      _showMessage(
+        'Pengalaman ini belum punya ID dari server, tidak bisa diedit.',
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -97,18 +136,25 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
         thumbnail: thumbnail.isEmpty ? null : thumbnail,
         endedAt: _endedAt,
       );
-      final created = await apiClient.createExperience(
-        newExperience,
-        token: token,
-      );
+      final created = _isEditing
+          ? await apiClient.updateExperience(
+              editId!,
+              newExperience,
+              token: token,
+            )
+          : await apiClient.createExperience(newExperience, token: token);
       if (!mounted) return;
 
-      // 201 Created: tampilkan dialog konfirmasi.
+      // Sukses (201 untuk tambah, 200 untuk edit): tampilkan dialog konfirmasi.
       await showDialog<void>(
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Pengalaman berhasil ditambahkan!'),
+            title: Text(
+              _isEditing
+                  ? 'Pengalaman berhasil diperbarui!'
+                  : 'Pengalaman berhasil ditambahkan!',
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,10 +177,20 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       );
       if (!mounted) return;
       _resetForm();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ExperienceListPage()),
+      final listRoute = MaterialPageRoute<void>(
+        builder: (context) => const ExperienceListPage(),
       );
+      if (_isEditing) {
+        // Buang halaman edit dan detail (datanya sudah usang), sisakan halaman
+        // awal, lalu buka daftar baru yang memuat ulang data dari server.
+        Navigator.pushAndRemoveUntil(
+          context,
+          listRoute,
+          (route) => route.isFirst,
+        );
+      } else {
+        Navigator.pushReplacement(context, listRoute);
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
@@ -144,9 +200,13 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
         _showMessage('Sesi berakhir. Silakan login kembali.');
         await ensureLoggedIn(context);
       } else {
-        final detail = e.statusCode == 400 ? '\n${e.message}' : '';
         _showMessage(
-          'Gagal menyimpan pengalaman (kode ${e.statusCode}).$detail',
+          apiErrorMessage(
+            e,
+            action: _isEditing
+                ? 'memperbarui pengalaman'
+                : 'menyimpan pengalaman',
+          ),
         );
       }
     } catch (_) {
@@ -165,11 +225,14 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(child: Text('Add Experience Form')),
+        title: _isEditing
+            ? const Text('Edit Experience Form')
+            : const Center(child: Text('Add Experience Form')),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      drawer: const LeftDrawer(),
+      // Mode edit tanpa drawer agar AppBar menampilkan tombol kembali.
+      drawer: _isEditing ? null : const LeftDrawer(),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -180,6 +243,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
+                  initialValue: widget.experience?.title,
                   decoration: InputDecoration(
                     hintText: "Nama Pengalaman",
                     labelText: "Nama Pengalaman",
@@ -209,6 +273,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   maxLines: 5,
+                  initialValue: widget.experience?.description,
                   decoration: InputDecoration(
                     hintText: "Deskripsi Pengalaman",
                     labelText: "Deskripsi Pengalaman",
@@ -240,7 +305,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
-                  initialValue: _defaultCategory,
+                  initialValue: _initialCategory,
                   items: Experience.categoryLabels.entries
                       .map(
                         (entry) => DropdownMenuItem(
@@ -262,6 +327,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   keyboardType: TextInputType.url,
+                  initialValue: widget.experience?.thumbnail,
                   decoration: InputDecoration(
                     hintText: "https://contoh.com/gambar.jpg",
                     labelText: "URL Thumbnail (opsional)",

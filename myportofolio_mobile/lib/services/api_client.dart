@@ -66,6 +66,33 @@ class ApiClient {
     return Skill.fromJson(_decodeObject(response));
   }
 
+  /// Memperbarui skill (`PATCH /api/v1/skills/<id>/`). Terautentikasi; server
+  /// membalas 403 bila akun tidak punya izin `change_skill`.
+  Future<Skill> updateSkill(
+    String id,
+    Skill skill, {
+    required String token,
+  }) async {
+    final response = await _client.patch(
+      _uri('/api/v1/skills/$id/'),
+      headers: _authJsonHeaders(token),
+      body: jsonEncode(skill.toJson()),
+    );
+    _ensureSuccess(response);
+
+    return Skill.fromJson(_decodeObject(response));
+  }
+
+  /// Menghapus skill (`DELETE /api/v1/skills/<id>/`). Terautentikasi; server
+  /// membalas 204 tanpa isi bila berhasil.
+  Future<void> deleteSkill(String id, {required String token}) async {
+    final response = await _client.delete(
+      _uri('/api/v1/skills/$id/'),
+      headers: _authHeaders(token),
+    );
+    _ensureSuccess(response);
+  }
+
   // ---------------------------------------------------------------------------
   // Experience  (/api/v1/experience/)
   // ---------------------------------------------------------------------------
@@ -108,6 +135,32 @@ class ApiClient {
     return Experience.fromJson(_decodeObject(response));
   }
 
+  /// Memperbarui experience (`PATCH /api/v1/experience/<id>/`). `ended_at`
+  /// bernilai null di body berarti pengalaman kembali berstatus berlangsung.
+  Future<Experience> updateExperience(
+    String id,
+    Experience experience, {
+    required String token,
+  }) async {
+    final response = await _client.patch(
+      _uri('/api/v1/experience/$id/'),
+      headers: _authJsonHeaders(token),
+      body: jsonEncode(experience.toJson()),
+    );
+    _ensureSuccess(response);
+
+    return Experience.fromJson(_decodeObject(response));
+  }
+
+  /// Menghapus experience (`DELETE /api/v1/experience/<id>/`).
+  Future<void> deleteExperience(String id, {required String token}) async {
+    final response = await _client.delete(
+      _uri('/api/v1/experience/$id/'),
+      headers: _authHeaders(token),
+    );
+    _ensureSuccess(response);
+  }
+
   // ---------------------------------------------------------------------------
   // Auth
   // ---------------------------------------------------------------------------
@@ -138,6 +191,16 @@ class ApiClient {
   // ---------------------------------------------------------------------------
   // Helper
   // ---------------------------------------------------------------------------
+
+  Map<String, String> _authHeaders(String token) => {
+    'Accept': 'application/json',
+    'Authorization': 'Token $token',
+  };
+
+  Map<String, String> _authJsonHeaders(String token) => {
+    ..._authHeaders(token),
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
 
   void _ensureSuccess(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

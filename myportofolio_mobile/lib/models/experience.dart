@@ -61,7 +61,7 @@ class Experience {
 
   /// Masih berlangsung bila belum ada tanggal selesai. Dihitung di sini
   /// dengan aturan yang sama seperti `is_ongoing` yang dikirim server.
-  bool get isOngoing => endedAt == null;
+  bool get isOngoing => endedAt == null || endedAt!.isAfter(DateTime.now());
 
   /// Label yang ramah dibaca, misalnya `part-time` menjadi `Part-Time`.
   /// Memakai `category_display` dari server, dengan cadangan peta lokal.

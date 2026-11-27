@@ -4,11 +4,15 @@ import 'package:myportofolio_mobile/screens/skill_list.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/utils/api_errors.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 import 'package:provider/provider.dart';
 
 class SkillFormPage extends StatefulWidget {
-  const SkillFormPage({super.key});
+  const SkillFormPage({super.key, this.skill});
+
+  /// Bila diisi, form berjalan dalam mode edit (PATCH) untuk skill ini.
+  final Skill? skill;
 
   @override
   State<SkillFormPage> createState() => _SkillFormPageState();
@@ -25,6 +29,27 @@ class _SkillFormPageState extends State<SkillFormPage> {
   // Kunci kategori mengikuti SKILL_CHOICES di backend (misalnya 'soft_skill').
   String _category = Skill.categoryLabels.keys.first; // default
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.skill != null;
+
+  // Kategori awal: milik skill yang diedit, atau pilihan pertama untuk skill baru.
+  String get _initialCategory {
+    final category = widget.skill?.category;
+    return category != null && Skill.categoryLabels.containsKey(category)
+        ? category
+        : Skill.categoryLabels.keys.first;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final skill = widget.skill;
+    if (skill != null) {
+      _title = skill.title;
+      _description = skill.description;
+    }
+    _category = _initialCategory;
+  }
 
   // Mengosongkan form sekaligus variabel penampungnya
   void _resetForm() {
@@ -55,6 +80,12 @@ class _SkillFormPageState extends State<SkillFormPage> {
     final token = auth.token;
     if (token == null) return;
 
+    final editId = widget.skill?.id;
+    if (_isEditing && editId == null) {
+      _showMessage('Skill ini belum punya ID dari server, tidak bisa diedit.');
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -65,15 +96,21 @@ class _SkillFormPageState extends State<SkillFormPage> {
         description: _description.trim(),
         category: _category,
       );
-      final created = await apiClient.createSkill(newSkill, token: token);
+      final created = _isEditing
+          ? await apiClient.updateSkill(editId!, newSkill, token: token)
+          : await apiClient.createSkill(newSkill, token: token);
       if (!mounted) return;
 
-      // 201 Created: tampilkan dialog konfirmasi.
+      // Sukses (201 untuk tambah, 200 untuk edit): tampilkan dialog konfirmasi.
       await showDialog<void>(
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Skill berhasil ditambahkan!'),
+            title: Text(
+              _isEditing
+                  ? 'Skill berhasil diperbarui!'
+                  : 'Skill berhasil ditambahkan!',
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,10 +132,20 @@ class _SkillFormPageState extends State<SkillFormPage> {
       );
       if (!mounted) return;
       _resetForm();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SkillListPage()),
+      final listRoute = MaterialPageRoute<void>(
+        builder: (context) => const SkillListPage(),
       );
+      if (_isEditing) {
+        // Buang halaman edit dan detail (datanya sudah usang), sisakan halaman
+        // awal, lalu buka daftar baru yang memuat ulang data dari server.
+        Navigator.pushAndRemoveUntil(
+          context,
+          listRoute,
+          (route) => route.isFirst,
+        );
+      } else {
+        Navigator.pushReplacement(context, listRoute);
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 401) {
@@ -108,8 +155,12 @@ class _SkillFormPageState extends State<SkillFormPage> {
         _showMessage('Sesi berakhir. Silakan login kembali.');
         await ensureLoggedIn(context);
       } else {
-        final detail = e.statusCode == 400 ? '\n${e.message}' : '';
-        _showMessage('Gagal menyimpan skill (kode ${e.statusCode}).$detail');
+        _showMessage(
+          apiErrorMessage(
+            e,
+            action: _isEditing ? 'memperbarui skill' : 'menyimpan skill',
+          ),
+        );
       }
     } catch (_) {
       if (!mounted) return;
@@ -127,11 +178,14 @@ class _SkillFormPageState extends State<SkillFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(child: Text('Add Skill Form')),
+        title: _isEditing
+            ? const Text('Edit Skill Form')
+            : const Center(child: Text('Add Skill Form')),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      drawer: const LeftDrawer(),
+      // Mode edit tanpa drawer agar AppBar menampilkan tombol kembali.
+      drawer: _isEditing ? null : const LeftDrawer(),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -142,6 +196,7 @@ class _SkillFormPageState extends State<SkillFormPage> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
+                  initialValue: widget.skill?.title,
                   decoration: InputDecoration(
                     hintText: "Nama Skill",
                     labelText: "Nama Skill",
@@ -171,6 +226,7 @@ class _SkillFormPageState extends State<SkillFormPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   maxLines: 5,
+                  initialValue: widget.skill?.description,
                   decoration: InputDecoration(
                     hintText: "Deskripsi Skill",
                     labelText: "Deskripsi Skill",
@@ -202,7 +258,7 @@ class _SkillFormPageState extends State<SkillFormPage> {
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
-                  initialValue: Skill.categoryLabels.keys.first,
+                  initialValue: _initialCategory,
                   items: Skill.categoryLabels.entries
                       .map(
                         (entry) => DropdownMenuItem(
